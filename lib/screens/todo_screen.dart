@@ -3,7 +3,8 @@ import 'package:bloc_api_integration/services/rest_service.dart';
 import 'package:flutter/material.dart';
 
 class TodoScreen extends StatefulWidget {
-  const TodoScreen({super.key});
+  final String? title;
+  const TodoScreen({super.key, this.title});
 
   @override
   State<TodoScreen> createState() => _TodoScreenState();
@@ -120,16 +121,7 @@ class _TodoScreenState extends State<TodoScreen> {
             size: 30,
           )),
       appBar: AppBar(
-        leading: const Icon(
-          Icons.arrow_back_ios,
-          color: Colors.black,
-        ),
-        // title: const Text(" To-Dos",
-        //     style: TextStyle(
-        //         color: Colors.white,
-        //         fontSize: 24,
-        //         fontWeight: FontWeight.bold)),
-        // backgroundColor: Colors.purple.shade500,
+        automaticallyImplyLeading: true,
       ),
       body: buildBody(),
     );
@@ -203,8 +195,8 @@ class _TodoScreenState extends State<TodoScreen> {
                                 fontSize: 14,
                                 fontWeight: FontWeight.w400,
                                 color: Colors.grey)),
-                        const Text("To-Do",
-                            style: TextStyle(
+                        Text(widget.title ?? "",
+                            style: const TextStyle(
                                 fontSize: 24, fontWeight: FontWeight.bold)),
                         Row(
                           children: [
