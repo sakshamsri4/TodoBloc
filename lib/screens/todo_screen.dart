@@ -41,48 +41,54 @@ class _TodoScreenState extends State<TodoScreen> {
 
   Widget buildReorderableList(bool isCheckedList) {
     List<Task> items = isCheckedList ? checkedItems : uncheckedItems;
-    return ReorderableListView(
-      onReorder: (int oldIndex, int newIndex) =>
-          reorderData(oldIndex, newIndex, isCheckedList),
-      children: List.generate(items.length, (index) {
-        return Dismissible(
-          key: Key('${items[index].title}_${items[index].description}_$index'),
-          onDismissed: (direction) {
-            setState(() {
-              isCheckedList
-                  ? checkedItems.removeAt(index)
-                  : uncheckedItems.removeAt(index);
-            });
-          },
-          child: Card(
-            child: ListTile(
-              title: Text(
-                items[index].title,
-                style: TextStyle(
-                  fontSize: 16,
-                  decoration: isCheckedList ? TextDecoration.lineThrough : null,
+    return SizedBox(
+      height: 400,
+      child: ReorderableListView(
+        onReorder: (int oldIndex, int newIndex) =>
+            reorderData(oldIndex, newIndex, isCheckedList),
+        children: List.generate(items.length, (index) {
+          return Dismissible(
+            key:
+                Key('${items[index].title}_${items[index].description}_$index'),
+            onDismissed: (direction) {
+              setState(() {
+                isCheckedList
+                    ? checkedItems.removeAt(index)
+                    : uncheckedItems.removeAt(index);
+              });
+            },
+            child: Card(
+              child: ListTile(
+                title: Text(
+                  items[index].title,
+                  style: TextStyle(
+                    fontSize: 16,
+                    decoration:
+                        isCheckedList ? TextDecoration.lineThrough : null,
+                  ),
                 ),
-              ),
-              subtitle: Text(
-                items[index].description,
-                style: TextStyle(
-                  fontSize: 12,
-                  decoration: isCheckedList ? TextDecoration.lineThrough : null,
+                subtitle: Text(
+                  items[index].description,
+                  style: TextStyle(
+                    fontSize: 12,
+                    decoration:
+                        isCheckedList ? TextDecoration.lineThrough : null,
+                  ),
                 ),
+                leading: Checkbox(
+                  value: isCheckedList,
+                  onChanged: (bool? newValue) {
+                    if (newValue != null) {
+                      handleCheckboxChange(newValue, items[index]);
+                    }
+                  },
+                ),
+                trailing: const Icon(Icons.reorder),
               ),
-              leading: Checkbox(
-                value: isCheckedList,
-                onChanged: (bool? newValue) {
-                  if (newValue != null) {
-                    handleCheckboxChange(newValue, items[index]);
-                  }
-                },
-              ),
-              trailing: const Icon(Icons.reorder),
             ),
-          ),
-        );
-      }),
+          );
+        }),
+      ),
     );
   }
 
@@ -167,38 +173,59 @@ class _TodoScreenState extends State<TodoScreen> {
   }
 
   Widget buildBody() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text("${uncheckedItems.length} Tasks",
-                    style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.grey)),
-                const Text("To-Do",
-                    style:
-                        TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-              ],
+    return SingleChildScrollView(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(vertical: 8.0, horizontal: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("${uncheckedItems.length} Tasks",
+                      style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                          color: Colors.grey)),
+                  const Text("To-Do",
+                      style:
+                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: LinearProgressIndicator(
+                          value: checkedItems.length /
+                              (checkedItems.length + uncheckedItems.length),
+                          color: Colors.purple,
+                          backgroundColor: Colors.grey.shade300,
+                        ),
+                      ),
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      Text(
+                          "${checkedItems.length} / ${checkedItems.length + uncheckedItems.length}")
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          Expanded(child: buildReorderableList(false)),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 10),
-            child: Text("+ ${checkedItems.length} Completed Tasks",
-                style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: Colors.grey)),
-          ),
-          Expanded(child: buildReorderableList(true)),
-        ],
+            buildReorderableList(false),
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(vertical: 8.0, horizontal: 10),
+              child: Text("+ ${checkedItems.length} Completed Tasks",
+                  style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.grey)),
+            ),
+            buildReorderableList(true),
+          ],
+        ),
       ),
     );
   }
