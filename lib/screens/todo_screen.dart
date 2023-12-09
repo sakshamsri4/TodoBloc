@@ -1,19 +1,30 @@
-import 'package:bloc_api_integration/models/task.dart';
+import 'package:bloc_api_integration/models/todo_model.dart';
+import 'package:bloc_api_integration/services/rest_service.dart';
 import 'package:flutter/material.dart';
 
 class TodoScreen extends StatefulWidget {
   const TodoScreen({super.key});
 
   @override
-  _TodoScreenState createState() => _TodoScreenState();
+  State<TodoScreen> createState() => _TodoScreenState();
 }
 
 class _TodoScreenState extends State<TodoScreen> {
-  List<Task> uncheckedItems = List<Task>.generate(
-      10, (i) => Task(title: "Item $i", description: "Description $i"));
-  List<Task> checkedItems = [];
+  List<TodoModel> uncheckedItems = [];
+  List<TodoModel> checkedItems = [];
 
-  void handleCheckboxChange(bool isChecked, Task item) {
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    getData();
+  }
+
+  getData() async {
+    uncheckedItems = await RestService().fetchTodo();
+  }
+
+  void handleCheckboxChange(bool isChecked, TodoModel item) {
     setState(() {
       if (isChecked) {
         uncheckedItems.remove(item);
@@ -30,7 +41,7 @@ class _TodoScreenState extends State<TodoScreen> {
       if (newIndex > oldIndex) {
         newIndex -= 1;
       }
-      final Task item = isCheckedList
+      final TodoModel item = isCheckedList
           ? checkedItems.removeAt(oldIndex)
           : uncheckedItems.removeAt(oldIndex);
       isCheckedList
@@ -40,9 +51,9 @@ class _TodoScreenState extends State<TodoScreen> {
   }
 
   Widget buildReorderableList(bool isCheckedList) {
-    List<Task> items = isCheckedList ? checkedItems : uncheckedItems;
+    List<TodoModel> items = isCheckedList ? checkedItems : uncheckedItems;
     return SizedBox(
-      height: 400,
+      height: 500,
       child: ReorderableListView(
         onReorder: (int oldIndex, int newIndex) =>
             reorderData(oldIndex, newIndex, isCheckedList),
@@ -60,7 +71,7 @@ class _TodoScreenState extends State<TodoScreen> {
             child: Card(
               child: ListTile(
                 title: Text(
-                  items[index].title,
+                  items[index].title ?? "",
                   style: TextStyle(
                     fontSize: 16,
                     decoration:
@@ -68,7 +79,7 @@ class _TodoScreenState extends State<TodoScreen> {
                   ),
                 ),
                 subtitle: Text(
-                  items[index].description,
+                  items[index].description ?? "",
                   style: TextStyle(
                     fontSize: 12,
                     decoration:
@@ -167,7 +178,7 @@ class _TodoScreenState extends State<TodoScreen> {
     setState(() {
       // Add the new task to the unchecked list
       // You might want to create a proper Task model class instead of using int
-      uncheckedItems.add(Task(title: title, description: description));
+      uncheckedItems.add(TodoModel(title: title, description: description));
       // Implement logic to use the title and description
     });
   }
@@ -197,8 +208,11 @@ class _TodoScreenState extends State<TodoScreen> {
                     children: [
                       Flexible(
                         child: LinearProgressIndicator(
-                          value: checkedItems.length /
-                              (checkedItems.length + uncheckedItems.length),
+                          value: checkedItems.isNotEmpty ||
+                                  uncheckedItems.isNotEmpty
+                              ? checkedItems.length /
+                                  (checkedItems.length + uncheckedItems.length)
+                              : 0,
                           color: Colors.purple,
                           backgroundColor: Colors.grey.shade300,
                         ),
