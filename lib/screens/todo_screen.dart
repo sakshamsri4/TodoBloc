@@ -12,16 +12,17 @@ class TodoScreen extends StatefulWidget {
 class _TodoScreenState extends State<TodoScreen> {
   List<TodoModel> uncheckedItems = [];
   List<TodoModel> checkedItems = [];
-
+  bool isLoading = false;
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     getData();
   }
 
   getData() async {
+    setState(() => isLoading = true);
     uncheckedItems = await RestService().fetchTodo();
+    setState(() => isLoading = false);
   }
 
   void handleCheckboxChange(bool isChecked, TodoModel item) {
@@ -184,63 +185,82 @@ class _TodoScreenState extends State<TodoScreen> {
   }
 
   Widget buildBody() {
-    return SingleChildScrollView(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(vertical: 8.0, horizontal: 10),
+    return !isLoading
+        ? SingleChildScrollView(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("${uncheckedItems.length} Tasks",
-                      style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                          color: Colors.grey)),
-                  const Text("To-Do",
-                      style:
-                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                  Row(
-                    children: [
-                      Flexible(
-                        child: LinearProgressIndicator(
-                          value: checkedItems.isNotEmpty ||
-                                  uncheckedItems.isNotEmpty
-                              ? checkedItems.length /
-                                  (checkedItems.length + uncheckedItems.length)
-                              : 0,
-                          color: Colors.purple,
-                          backgroundColor: Colors.grey.shade300,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 8.0, horizontal: 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("${uncheckedItems.length} Tasks",
+                            style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w400,
+                                color: Colors.grey)),
+                        const Text("To-Do",
+                            style: TextStyle(
+                                fontSize: 24, fontWeight: FontWeight.bold)),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: LinearProgressIndicator(
+                                value: checkedItems.isNotEmpty ||
+                                        uncheckedItems.isNotEmpty
+                                    ? checkedItems.length /
+                                        (checkedItems.length +
+                                            uncheckedItems.length)
+                                    : 0,
+                                color: Colors.purple,
+                                backgroundColor: Colors.grey.shade300,
+                              ),
+                            ),
+                            const SizedBox(
+                              width: 10,
+                            ),
+                            Text(
+                                "${checkedItems.length} / ${checkedItems.length + uncheckedItems.length}")
+                          ],
                         ),
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      Text(
-                          "${checkedItems.length} / ${checkedItems.length + uncheckedItems.length}")
-                    ],
+                      ],
+                    ),
                   ),
+                  uncheckedItems.isNotEmpty
+                      ? buildReorderableList(false)
+                      : const SizedBox(
+                          height: 200,
+                          child: Center(
+                            child: Text("No Tasks Added Yet",
+                                style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey)),
+                          ),
+                        ),
+                  Visibility(
+                    visible: checkedItems.isNotEmpty,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 8.0, horizontal: 10),
+                      child: Text("+ ${checkedItems.length} Completed Tasks",
+                          style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                              color: Colors.grey)),
+                    ),
+                  ),
+                  buildReorderableList(true),
                 ],
               ),
             ),
-            buildReorderableList(false),
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(vertical: 8.0, horizontal: 10),
-              child: Text("+ ${checkedItems.length} Completed Tasks",
-                  style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.grey)),
-            ),
-            buildReorderableList(true),
-          ],
-        ),
-      ),
-    );
+          )
+        : const Center(
+            child: CircularProgressIndicator(),
+          );
   }
 }
