@@ -31,4 +31,21 @@ class TodoModel {
       'completed': completed,
     };
   }
+
+  // Add a copyWith method
+  TodoModel copyWith({
+    int? userId,
+    int? id,
+    String? title,
+    String? description,
+    bool? completed,
+  }) {
+    return TodoModel(
+      userId: userId ?? this.userId,
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      completed: completed ?? this.completed,
+    );
+  }
 }

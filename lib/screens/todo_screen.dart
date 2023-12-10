@@ -1,6 +1,9 @@
+import 'package:bloc_api_integration/bloc/todo_bloc.dart';
+import 'package:bloc_api_integration/bloc/todo_event.dart';
+import 'package:bloc_api_integration/bloc/todo_state.dart';
 import 'package:bloc_api_integration/models/todo_model.dart';
-import 'package:bloc_api_integration/services/rest_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class TodoScreen extends StatefulWidget {
   final String? title;
@@ -11,96 +14,89 @@ class TodoScreen extends StatefulWidget {
 }
 
 class _TodoScreenState extends State<TodoScreen> {
-  List<TodoModel> uncheckedItems = [];
-  List<TodoModel> checkedItems = [];
-  bool isLoading = false;
   @override
   void initState() {
     super.initState();
-    getData();
-  }
-
-  getData() async {
-    setState(() => isLoading = true);
-    uncheckedItems = await RestService().fetchTodo();
-    setState(() => isLoading = false);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<TodoBloc>().add(LoadTodos());
+    });
   }
 
   void handleCheckboxChange(bool isChecked, TodoModel item) {
-    setState(() {
-      if (isChecked) {
-        uncheckedItems.remove(item);
-        checkedItems.add(item);
-      } else {
-        checkedItems.remove(item);
-        uncheckedItems.add(item);
-      }
-    });
+    context.read<TodoBloc>().add(TodoStatusChanged(item, isChecked));
   }
 
   void reorderData(int oldIndex, int newIndex, bool isCheckedList) {
-    setState(() {
-      if (newIndex > oldIndex) {
-        newIndex -= 1;
-      }
-      final TodoModel item = isCheckedList
-          ? checkedItems.removeAt(oldIndex)
-          : uncheckedItems.removeAt(oldIndex);
-      isCheckedList
-          ? checkedItems.insert(newIndex, item)
-          : uncheckedItems.insert(newIndex, item);
-    });
+    context
+        .read<TodoBloc>()
+        .add(ReorderTodo(oldIndex, newIndex, isCheckedList));
   }
 
-  Widget buildReorderableList(bool isCheckedList) {
-    List<TodoModel> items = isCheckedList ? checkedItems : uncheckedItems;
-    return SizedBox(
-      height: 500,
-      child: ReorderableListView(
-        onReorder: (int oldIndex, int newIndex) =>
-            reorderData(oldIndex, newIndex, isCheckedList),
-        children: List.generate(items.length, (index) {
-          return Dismissible(
-            key:
-                Key('${items[index].title}_${items[index].description}_$index'),
-            onDismissed: (direction) {
-              setState(() {
-                isCheckedList
-                    ? checkedItems.removeAt(index)
-                    : uncheckedItems.removeAt(index);
-              });
-            },
-            child: Card(
-              child: ListTile(
-                title: Text(
-                  items[index].title ?? "",
-                  style: TextStyle(
-                    fontSize: 16,
-                    decoration:
-                        isCheckedList ? TextDecoration.lineThrough : null,
-                  ),
-                ),
-                subtitle: Text(
-                  items[index].description ?? "",
-                  style: TextStyle(
-                    fontSize: 12,
-                    decoration:
-                        isCheckedList ? TextDecoration.lineThrough : null,
-                  ),
-                ),
-                leading: Checkbox(
-                  value: isCheckedList,
-                  onChanged: (bool? newValue) {
-                    if (newValue != null) {
-                      handleCheckboxChange(newValue, items[index]);
-                    }
-                  },
-                ),
-                trailing: const Icon(Icons.reorder),
-              ),
+  Widget buildReorderableList(BuildContext context, bool isCheckedList) {
+    return BlocBuilder<TodoBloc, TodoState>(
+      builder: (context, state) {
+        if (state is TodosLoadSuccess) {
+          List<TodoModel> items = state.todos
+              .where((todo) => todo.completed == isCheckedList)
+              .toList();
+
+          return SizedBox(
+            height: 500,
+            child: ReorderableListView(
+              onReorder: (int oldIndex, int newIndex) =>
+                  _onReorder(context, items, oldIndex, newIndex, isCheckedList),
+              children: List.generate(items.length, (index) {
+                return buildTodoItem(context, items[index], index);
+              }),
             ),
           );
-        }),
+        } else {
+          return const Center(child: Text('No tasks available'));
+        }
+      },
+    );
+  }
+
+  void _onReorder(BuildContext context, List<TodoModel> items, int oldIndex,
+      int newIndex, bool isCheckedList) {
+    if (newIndex > oldIndex) {
+      newIndex -= 1;
+    }
+    final TodoModel item = items.removeAt(oldIndex);
+    items.insert(newIndex, item);
+    // Dispatch reorder event
+    context
+        .read<TodoBloc>()
+        .add(ReorderTodo(oldIndex, newIndex, isCheckedList));
+  }
+
+  Widget buildTodoItem(BuildContext context, TodoModel todo, int index) {
+    return Dismissible(
+      background: Container(
+        color: const Color.fromARGB(
+            255, 244, 92, 81), // Background color when the item is swiped
+        alignment: Alignment.center,
+
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      key: Key('${todo.id}'),
+      onDismissed: (direction) {
+        context.read<TodoBloc>().add(DeleteTodo(todo.id ?? 0));
+      },
+      child: Card(
+        child: ListTile(
+          title: Text(todo.title ?? ""),
+          subtitle: Text(todo.description ?? ""),
+          leading: Checkbox(
+            value: todo.completed,
+            onChanged: (bool? newValue) {
+              context
+                  .read<TodoBloc>()
+                  .add(TodoStatusChanged(todo, newValue ?? false));
+            },
+          ),
+          trailing: const Icon(Icons.reorder),
+        ),
       ),
     );
   }
@@ -122,6 +118,7 @@ class _TodoScreenState extends State<TodoScreen> {
           )),
       appBar: AppBar(
         automaticallyImplyLeading: true,
+        title: const Text('My AppBar'),
       ),
       body: buildBody(),
     );
@@ -168,91 +165,109 @@ class _TodoScreenState extends State<TodoScreen> {
   }
 
   void addTask(String title, String description) {
-    setState(() {
-      // Add the new task to the unchecked list
-      // You might want to create a proper Task model class instead of using int
-      uncheckedItems.add(TodoModel(title: title, description: description));
-      // Implement logic to use the title and description
-    });
+    context.read<TodoBloc>().add(AddTodo(TodoModel(
+          title: title,
+          description: description,
+          completed: false,
+        )));
   }
 
   Widget buildBody() {
-    return !isLoading
-        ? SingleChildScrollView(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
+    return BlocBuilder<TodoBloc, TodoState>(
+      builder: (context, state) {
+        if (state is TodosLoadInProgress) {
+          // Show loading indicator
+          return const Center(child: CircularProgressIndicator());
+        } else if (state is TodosLoadSuccess) {
+          // Show the task list
+          return buildTaskList(context, state.todos);
+        } else if (state is TodosLoadFailure) {
+          // Show error message
+          return Center(child: Text(state.message));
+        } else {
+          // Default case
+          return const Center(child: Text('No tasks found'));
+        }
+      },
+    );
+  }
+
+  Widget buildTaskList(BuildContext context, List<TodoModel> todos) {
+    var completedTodos = todos.where((todo) => todo.completed == true).toList();
+    var uncompletedTodos =
+        todos.where((todo) => todo.completed != true).toList();
+
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(vertical: 8.0, horizontal: 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 8.0, horizontal: 10),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("${uncheckedItems.length} Tasks",
-                            style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w400,
-                                color: Colors.grey)),
-                        Text(widget.title ?? "",
-                            style: const TextStyle(
-                                fontSize: 24, fontWeight: FontWeight.bold)),
-                        Row(
-                          children: [
-                            Flexible(
-                              child: LinearProgressIndicator(
-                                value: checkedItems.isNotEmpty ||
-                                        uncheckedItems.isNotEmpty
-                                    ? checkedItems.length /
-                                        (checkedItems.length +
-                                            uncheckedItems.length)
-                                    : 0,
-                                color: Colors.purple,
-                                backgroundColor: Colors.grey.shade300,
-                              ),
-                            ),
-                            const SizedBox(
-                              width: 10,
-                            ),
-                            Text(
-                                "${checkedItems.length} / ${checkedItems.length + uncheckedItems.length}")
-                          ],
+                  Text("${uncompletedTodos.length} Tasks",
+                      style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                          color: Colors.grey)),
+                  Text(widget.title ?? "",
+                      style: const TextStyle(
+                          fontSize: 24, fontWeight: FontWeight.bold)),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: LinearProgressIndicator(
+                          value: completedTodos.length / todos.length,
+                          color: Colors.purple,
+                          backgroundColor: Colors.grey.shade300,
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text("${completedTodos.length} / ${todos.length}")
+                    ],
                   ),
-                  uncheckedItems.isNotEmpty
-                      ? buildReorderableList(false)
-                      : const SizedBox(
-                          height: 200,
-                          child: Center(
-                            child: Text("No Tasks Added Yet",
-                                style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.grey)),
-                          ),
-                        ),
-                  Visibility(
-                    visible: checkedItems.isNotEmpty,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 8.0, horizontal: 10),
-                      child: Text("+ ${checkedItems.length} Completed Tasks",
-                          style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w400,
-                              color: Colors.grey)),
-                    ),
-                  ),
-                  buildReorderableList(true),
                 ],
               ),
             ),
-          )
-        : const Center(
-            child: CircularProgressIndicator(),
-          );
+            uncompletedTodos.isNotEmpty
+                ? buildReorderableList(
+                    context,
+                    false,
+                  )
+                : const SizedBox(
+                    height: 200,
+                    child: Center(
+                      child: Text("No Tasks Added Yet",
+                          style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey)),
+                    ),
+                  ),
+            Visibility(
+              visible: completedTodos.isNotEmpty,
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 8.0, horizontal: 10),
+                child: Text("+ ${completedTodos.length} Completed Tasks",
+                    style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.grey)),
+              ),
+            ),
+            buildReorderableList(
+              context,
+              true,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

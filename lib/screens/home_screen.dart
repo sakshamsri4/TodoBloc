@@ -1,5 +1,8 @@
+import 'package:bloc_api_integration/bloc/todo_bloc.dart';
 import 'package:bloc_api_integration/screens/todo_screen.dart';
+import 'package:bloc_api_integration/services/rest_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,8 +20,6 @@ class _HomeScreenState extends State<HomeScreen> {
       'taskCount': 46,
       'team': [
         "https://media.istockphoto.com/id/1130907832/photo/stunning-young-woman.jpg?s=1024x1024&w=is&k=20&c=Dc8QN55OfE5mqgAVU34c-umwx32KKuMBA7M24VKx_kE=",
-        'https://via.placeholder.com/150',
-        'https://via.placeholder.com/150'
       ],
     },
     {
@@ -27,8 +28,6 @@ class _HomeScreenState extends State<HomeScreen> {
       'taskCount': 46,
       'team': [
         "https://media.istockphoto.com/id/1290658063/photo/portrait-of-a-beautiful-woman-with-natural-make-up.jpg?s=2048x2048&w=is&k=20&c=dZsBcuhog3SZnTj6bq5Is_isO2TpBNWunUwlKkln_dw=",
-        'https://via.placeholder.com/150',
-        'https://via.placeholder.com/150'
       ],
     },
     {
@@ -37,8 +36,6 @@ class _HomeScreenState extends State<HomeScreen> {
       'taskCount': 46,
       'team': [
         "https://media.istockphoto.com/id/1174452879/photo/i-do-all-my-work-on-this-device.jpg?s=612x612&w=0&k=20&c=ukqiZAIztp7olWY2h4kbcvdZJQ4e0G6zqwNPRlF5Q9Y=",
-        'https://via.placeholder.com/150',
-        'https://via.placeholder.com/150'
       ],
     },
     {
@@ -47,8 +44,6 @@ class _HomeScreenState extends State<HomeScreen> {
       'taskCount': 46,
       'team': [
         "https://media.istockphoto.com/id/1040964880/photo/stay-hungry-for-success.jpg?s=612x612&w=0&k=20&c=rA1HTQ_BS1bv1POYCRthD179B3yENJhJITVeJTt_vJg=",
-        'https://via.placeholder.com/150',
-        'https://via.placeholder.com/150'
       ],
     },
     {
@@ -57,8 +52,6 @@ class _HomeScreenState extends State<HomeScreen> {
       'taskCount': 46,
       'team': [
         "https://media.istockphoto.com/id/1198027123/photo/real-woman.jpg?s=2048x2048&w=is&k=20&c=DEn5JjgfQOJL2o4hRcluSuU5AepL-NaNhiI7sdg8jcs=",
-        'https://via.placeholder.com/150',
-        'https://via.placeholder.com/150'
       ],
     },
     {
@@ -67,40 +60,9 @@ class _HomeScreenState extends State<HomeScreen> {
       'taskCount': 46,
       'team': [
         "https://media.istockphoto.com/id/1364917563/photo/businessman-smiling-with-arms-crossed-on-white-background.jpg?s=612x612&w=0&k=20&c=NtM9Wbs1DBiGaiowsxJY6wNCnLf0POa65rYEwnZymrM=",
-        'https://via.placeholder.com/150',
-        'https://via.placeholder.com/150'
       ],
     },
-    {
-      'title': 'Shape Website',
-      'progress': 0.75,
-      'taskCount': 46,
-      'team': [
-        'https://via.placeholder.com/150',
-        'https://via.placeholder.com/150',
-        'https://via.placeholder.com/150'
-      ],
-    },
-    {
-      'title': 'Shape Website',
-      'progress': 0.75,
-      'taskCount': 46,
-      'team': [
-        'https://via.placeholder.com/150',
-        'https://via.placeholder.com/150',
-        'https://via.placeholder.com/150'
-      ],
-    },
-    {
-      'title': 'Shape Website',
-      'progress': 0.75,
-      'taskCount': 46,
-      'team': [
-        'https://via.placeholder.com/150',
-        'https://via.placeholder.com/150',
-        'https://via.placeholder.com/150'
-      ],
-    },
+
     // Add more task maps...
   ];
 
