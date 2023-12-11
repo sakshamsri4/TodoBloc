@@ -129,7 +129,8 @@ class _TodoScreenState extends State<TodoScreen> {
           )),
       appBar: AppBar(
         automaticallyImplyLeading: true,
-        title: const Text('My AppBar'),
+        title: const Text('To-Dos',
+            style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
         actions: const [
           Padding(
             padding: EdgeInsets.only(right: 10.0),

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:bloc_api_integration/screens/todo_screen.dart';
 import 'package:flutter/material.dart';
 
@@ -71,9 +73,9 @@ class _HomeScreenState extends State<HomeScreen> {
       body: buildBody(),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Add your onPressed code here!
+          _showAddTaskDialog(context);
         },
-        backgroundColor: Colors.purple,
+        backgroundColor: Colors.purpleAccent,
         child: const Icon(Icons.add),
       ),
     );
@@ -120,6 +122,61 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ],
     );
+  }
+
+  Future<void> _showAddTaskDialog(BuildContext context) async {
+    TextEditingController titleController = TextEditingController();
+
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // User must tap button to close dialog
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Add a New Task'),
+          content: TextField(
+            controller: titleController,
+            decoration: const InputDecoration(hintText: 'Enter task title'),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop(); // Dismiss dialog
+              },
+            ),
+            TextButton(
+              child: const Text('Add'),
+              onPressed: () {
+                if (titleController.text.isNotEmpty) {
+                  _addNewTask(titleController.text, context);
+                  Navigator.of(dialogContext).pop(); // Dismiss dialog
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Title cannot be empty')),
+                  );
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _addNewTask(String title, BuildContext context) {
+    // Generate a random index to select a picture
+    int randomIndex = Random().nextInt(tasks.length);
+    String randomImage = tasks[randomIndex]['team'][0];
+
+    // Add the new task to the list
+    setState(() {
+      tasks.add({
+        'title': title,
+        'progress': 0.75,
+        'taskCount': 46,
+        'team': [randomImage],
+      });
+    });
   }
 }
 
