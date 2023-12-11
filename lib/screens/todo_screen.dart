@@ -7,7 +7,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class TodoScreen extends StatefulWidget {
   final String? title;
-  const TodoScreen({super.key, this.title});
+  final String? image;
+  const TodoScreen({super.key, this.title, this.image});
 
   @override
   State<TodoScreen> createState() => _TodoScreenState();
@@ -83,19 +84,29 @@ class _TodoScreenState extends State<TodoScreen> {
       onDismissed: (direction) {
         context.read<TodoBloc>().add(DeleteTodo(todo.id ?? 0));
       },
-      child: Card(
-        child: ListTile(
-          title: Text(todo.title ?? ""),
-          subtitle: Text(todo.description ?? ""),
-          leading: Checkbox(
-            value: todo.completed,
-            onChanged: (bool? newValue) {
-              context
-                  .read<TodoBloc>()
-                  .add(TodoStatusChanged(todo, newValue ?? false));
-            },
+      child: Center(
+        child: Card(
+          child: ListTile(
+            //   tileColor: Colors.grey.shade100,
+            title: Text(
+              todo.title ?? "",
+              style: TextStyle(
+                decoration: todo.completed == true
+                    ? TextDecoration.lineThrough
+                    : null, // Cross off text if completed
+              ),
+            ),
+            subtitle: Text(todo.description ?? ""),
+            leading: Checkbox(
+              value: todo.completed,
+              onChanged: (bool? newValue) {
+                context
+                    .read<TodoBloc>()
+                    .add(TodoStatusChanged(todo, newValue ?? false));
+              },
+            ),
+            trailing: const Icon(Icons.reorder),
           ),
-          trailing: const Icon(Icons.reorder),
         ),
       ),
     );
@@ -119,6 +130,15 @@ class _TodoScreenState extends State<TodoScreen> {
       appBar: AppBar(
         automaticallyImplyLeading: true,
         title: const Text('My AppBar'),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 10.0),
+            child: Icon(
+              Icons.delete_outline_outlined,
+              color: Colors.redAccent,
+            ),
+          ),
+        ],
       ),
       body: buildBody(),
     );
@@ -153,6 +173,12 @@ class _TodoScreenState extends State<TodoScreen> {
                   if (title.isNotEmpty) {
                     // Assuming you have a method to add a task
                     addTask(title, description);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Title cannot be empty'),
+                      ),
+                    );
                   }
                   Navigator.pop(context);
                 },

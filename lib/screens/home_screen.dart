@@ -1,8 +1,5 @@
-import 'package:bloc_api_integration/bloc/todo_bloc.dart';
 import 'package:bloc_api_integration/screens/todo_screen.dart';
-import 'package:bloc_api_integration/services/rest_service.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -149,7 +146,10 @@ class TaskCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => TodoScreen(title: title),
+            builder: (context) => TodoScreen(
+              title: title,
+              image: team[0],
+            ),
           ),
         );
       },
