@@ -1,8 +1,11 @@
-part of 'home_bloc.dart';
+abstract class TaskEvent {}
 
-sealed class HomeEvent extends Equatable {
-  const HomeEvent();
+class LoadTasks extends TaskEvent {}
 
-  @override
-  List<Object> get props => [];
+class AddTask extends TaskEvent {
+  final Map<String, dynamic> newTask;
+
+  AddTask(this.newTask);
 }
+
+// More events can be added as needed

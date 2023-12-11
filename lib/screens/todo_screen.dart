@@ -222,7 +222,7 @@ class _TodoScreenState extends State<TodoScreen> {
   Widget buildTaskList(BuildContext context, List<TodoModel> todos) {
     var completedTodos = todos.where((todo) => todo.completed == true).toList();
     var uncompletedTodos =
-        todos.where((todo) => todo.completed != true).toList();
+        todos.where((todo) => todo.completed == false).toList();
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),

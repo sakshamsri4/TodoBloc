@@ -1,10 +1,17 @@
-part of 'home_bloc.dart';
+abstract class TaskState {}
 
-sealed class HomeState extends Equatable {
-  const HomeState();
-  
-  @override
-  List<Object> get props => [];
+class TaskInitial extends TaskState {}
+
+class TasksLoadSuccess extends TaskState {
+  final List<Map<String, dynamic>> tasks;
+
+  TasksLoadSuccess(this.tasks);
 }
 
-final class HomeInitial extends HomeState {}
+class TaskAdditionSuccess extends TaskState {
+  final List<Map<String, dynamic>> tasks;
+
+  TaskAdditionSuccess(this.tasks);
+}
+
+// More states can be added as needed

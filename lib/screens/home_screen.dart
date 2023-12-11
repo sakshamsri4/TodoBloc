@@ -1,7 +1,11 @@
 import 'dart:math';
 
+import 'package:bloc_api_integration/bloc/home_bloc.dart';
+import 'package:bloc_api_integration/bloc/home_event.dart';
+import 'package:bloc_api_integration/bloc/home_state.dart';
 import 'package:bloc_api_integration/screens/todo_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,58 +16,12 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   // List of tasks and their progress. This could come from your backend or state management logic.
-  final List<Map<String, dynamic>> tasks = [
-    {
-      'title': 'Shape Website',
-      'progress': 0.75,
-      'taskCount': 46,
-      'team': [
-        "https://media.istockphoto.com/id/1130907832/photo/stunning-young-woman.jpg?s=1024x1024&w=is&k=20&c=Dc8QN55OfE5mqgAVU34c-umwx32KKuMBA7M24VKx_kE=",
-      ],
-    },
-    {
-      'title': 'Shape Website',
-      'progress': 0.75,
-      'taskCount': 46,
-      'team': [
-        "https://media.istockphoto.com/id/1290658063/photo/portrait-of-a-beautiful-woman-with-natural-make-up.jpg?s=2048x2048&w=is&k=20&c=dZsBcuhog3SZnTj6bq5Is_isO2TpBNWunUwlKkln_dw=",
-      ],
-    },
-    {
-      'title': 'Shape Website',
-      'progress': 0.75,
-      'taskCount': 46,
-      'team': [
-        "https://media.istockphoto.com/id/1174452879/photo/i-do-all-my-work-on-this-device.jpg?s=612x612&w=0&k=20&c=ukqiZAIztp7olWY2h4kbcvdZJQ4e0G6zqwNPRlF5Q9Y=",
-      ],
-    },
-    {
-      'title': 'Shape Website',
-      'progress': 0.75,
-      'taskCount': 46,
-      'team': [
-        "https://media.istockphoto.com/id/1040964880/photo/stay-hungry-for-success.jpg?s=612x612&w=0&k=20&c=rA1HTQ_BS1bv1POYCRthD179B3yENJhJITVeJTt_vJg=",
-      ],
-    },
-    {
-      'title': 'Shape Website',
-      'progress': 0.75,
-      'taskCount': 46,
-      'team': [
-        "https://media.istockphoto.com/id/1198027123/photo/real-woman.jpg?s=2048x2048&w=is&k=20&c=DEn5JjgfQOJL2o4hRcluSuU5AepL-NaNhiI7sdg8jcs=",
-      ],
-    },
-    {
-      'title': 'Shape Website',
-      'progress': 0.75,
-      'taskCount': 46,
-      'team': [
-        "https://media.istockphoto.com/id/1364917563/photo/businessman-smiling-with-arms-crossed-on-white-background.jpg?s=612x612&w=0&k=20&c=NtM9Wbs1DBiGaiowsxJY6wNCnLf0POa65rYEwnZymrM=",
-      ],
-    },
-
-    // Add more task maps...
-  ];
+  @override
+  void initState() {
+    super.initState();
+    // Trigger loading tasks when the widget is initialized
+    context.read<TaskBloc>().add(LoadTasks());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,22 +39,37 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget buildBody() {
+  Widget _buildTaskGrid(List<Map<String, dynamic>> tasks) {
     return GridView.builder(
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
+        crossAxisCount: 2, // Number of columns
+        crossAxisSpacing: 16, // Horizontal space between cards
+        mainAxisSpacing: 16, // Vertical space between cards
       ),
       itemCount: tasks.length,
       itemBuilder: (BuildContext context, int index) {
+        final task = tasks[index];
         return TaskCard(
-          title: tasks[index]['title'],
-          progress: tasks[index]['progress'],
-          taskCount: tasks[index]['taskCount'],
-          team: tasks[index]['team'],
+          title: task['title'],
+          progress: task['progress'],
+          taskCount: task['taskCount'],
+          image: task['image'],
         );
+      },
+    );
+  }
+
+  Widget buildBody() {
+    return BlocBuilder<TaskBloc, TaskState>(
+      builder: (context, state) {
+        if (state is TasksLoadSuccess) {
+          return _buildTaskGrid(state.tasks);
+        } else if (state is TaskAdditionSuccess) {
+          return _buildTaskGrid(state.tasks);
+        } else {
+          return const Center(child: CircularProgressIndicator());
+        }
       },
     );
   }
@@ -105,13 +78,23 @@ class _HomeScreenState extends State<HomeScreen> {
     return AppBar(
       title: const Text('Goals'),
       elevation: 0,
-      leading: Container(
-        margin: const EdgeInsets.all(8), // Add some margin if needed
-        width: 20, // Set your desired width
-        height: 20, // Set your desired height
-        child: CircleAvatar(
-          backgroundImage: NetworkImage(tasks[0]['team'][0]),
-        ),
+      leading: BlocBuilder<TaskBloc, TaskState>(
+        builder: (context, state) {
+          if (state is TasksLoadSuccess && state.tasks.isNotEmpty) {
+            String imageUrl =
+                state.tasks[1]['image']; // Access the first task's image URL
+            return Container(
+              margin: const EdgeInsets.all(8),
+              width: 20,
+              height: 20,
+              child: CircleAvatar(
+                backgroundImage: NetworkImage(imageUrl),
+              ),
+            );
+          } else {
+            return const SizedBox.shrink();
+          }
+        },
       ),
       actions: [
         IconButton(
@@ -164,19 +147,29 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _addNewTask(String title, BuildContext context) {
-    // Generate a random index to select a picture
-    int randomIndex = Random().nextInt(tasks.length);
-    String randomImage = tasks[randomIndex]['team'][0];
+    // Access the current state of TaskBloc
+    final taskBloc = BlocProvider.of<TaskBloc>(context);
+    final currentState = taskBloc.state;
 
-    // Add the new task to the list
-    setState(() {
-      tasks.add({
+    if (currentState is TasksLoadSuccess) {
+      // Get the current list of tasks
+      final currentTasks = currentState.tasks;
+
+      // Generate a random index to select a picture
+      int randomIndex = Random().nextInt(currentTasks.length);
+      String randomImage = currentTasks[randomIndex]['image'];
+
+      // Create the new task
+      Map<String, dynamic> newTask = {
         'title': title,
         'progress': 0.75,
         'taskCount': 46,
-        'team': [randomImage],
-      });
-    });
+        'image': randomImage,
+      };
+
+      // Add the new task
+      taskBloc.add(AddTask(newTask));
+    }
   }
 }
 
@@ -184,7 +177,7 @@ class TaskCard extends StatelessWidget {
   final String title;
   final double progress;
   final int taskCount;
-  final List<String> team;
+  final String image;
   final VoidCallback? onTap;
 
   const TaskCard(
@@ -192,7 +185,7 @@ class TaskCard extends StatelessWidget {
       required this.title,
       required this.progress,
       required this.taskCount,
-      required this.team,
+      required this.image,
       this.onTap})
       : super(key: key);
 
@@ -205,7 +198,7 @@ class TaskCard extends StatelessWidget {
           MaterialPageRoute(
             builder: (context) => TodoScreen(
               title: title,
-              image: team[0],
+              image: image,
             ),
           ),
         );
@@ -219,7 +212,7 @@ class TaskCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 // First member of the team
-                backgroundImage: NetworkImage(team[0]),
+                backgroundImage: NetworkImage(image),
                 radius: 18,
               ),
               const SizedBox(height: 8),
