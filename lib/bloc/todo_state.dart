@@ -8,7 +8,9 @@ class TodosLoadInProgress extends TodoState {}
 
 class TodosLoadSuccess extends TodoState {
   final List<TodoModel> todos;
-  TodosLoadSuccess(this.todos);
+  final int checkedCount;
+  final int uncheckedCount;
+  TodosLoadSuccess(this.todos, this.checkedCount, this.uncheckedCount);
 }
 
 class TodoOperationSuccess extends TodoState {
@@ -25,4 +27,15 @@ class TodosLoadFailure extends TodoState {
   final String message;
 
   TodosLoadFailure(this.message);
+}
+
+class TodosCountUpdated extends TodoState {
+  final int checkedCount;
+  final int uncheckedCount;
+  final List<TodoModel> todos;
+
+  TodosCountUpdated(
+      {required this.checkedCount,
+      required this.uncheckedCount,
+      this.todos = const []});
 }

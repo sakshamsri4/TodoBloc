@@ -1,26 +1,34 @@
 import 'dart:math';
 
-import 'package:bloc_api_integration/bloc/home_bloc.dart';
-import 'package:bloc_api_integration/bloc/home_event.dart';
-import 'package:bloc_api_integration/bloc/home_state.dart';
+import 'package:bloc_api_integration/bloc/task_bloc.dart';
+import 'package:bloc_api_integration/bloc/task_event.dart';
+import 'package:bloc_api_integration/bloc/task_state.dart';
+import 'package:bloc_api_integration/bloc/todo_bloc.dart';
+import 'package:bloc_api_integration/bloc/todo_event.dart';
+import 'package:bloc_api_integration/bloc/todo_state.dart';
+import 'package:bloc_api_integration/models/todo_model.dart';
 import 'package:bloc_api_integration/screens/todo_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class TaskScreen extends StatefulWidget {
+  const TaskScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<TaskScreen> createState() => _TaskScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _TaskScreenState extends State<TaskScreen> {
   // List of tasks and their progress. This could come from your backend or state management logic.
   @override
   void initState() {
     super.initState();
     // Trigger loading tasks when the widget is initialized
     context.read<TaskBloc>().add(LoadTasks());
+    context.read<TodoBloc>().add(LoadTodos());
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   context.read<TodoBloc>().add(LoadTodos());
+    // });
   }
 
   @override
@@ -40,21 +48,35 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildTaskGrid(List<Map<String, dynamic>> tasks) {
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2, // Number of columns
-        crossAxisSpacing: 16, // Horizontal space between cards
-        mainAxisSpacing: 16, // Vertical space between cards
-      ),
-      itemCount: tasks.length,
-      itemBuilder: (BuildContext context, int index) {
-        final task = tasks[index];
-        return TaskCard(
-          title: task['title'],
-          progress: task['progress'],
-          taskCount: task['taskCount'],
-          image: task['image'],
+    return BlocBuilder<TodoBloc, TodoState>(
+      builder: (context, state) {
+        // Extract the counts from the state
+        int checkedCount = 0;
+        int uncheckedCount = 0;
+        debugPrint('state is $state');
+        if (state is TodosCountUpdated) {
+          checkedCount = state.checkedCount;
+          uncheckedCount = state.uncheckedCount;
+        }
+        return GridView.builder(
+          padding: const EdgeInsets.all(16),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2, // Number of columns
+            crossAxisSpacing: 16, // Horizontal space between cards
+            mainAxisSpacing: 16, // Vertical space between cards
+          ),
+          itemCount: tasks.length,
+          itemBuilder: (BuildContext context, int index) {
+            final task = tasks[index];
+            return TaskCard(
+                title: task['title'],
+                progress: checkedCount > 0 || uncheckedCount > 0
+                    ? checkedCount / (checkedCount + uncheckedCount)
+                    : 0.0,
+                taskCount: uncheckedCount,
+                image: task['image'],
+                todos: task['todos']);
+          },
         );
       },
     );
@@ -162,9 +184,10 @@ class _HomeScreenState extends State<HomeScreen> {
       // Create the new task
       Map<String, dynamic> newTask = {
         'title': title,
-        'progress': 0.75,
-        'taskCount': 46,
+        'progress': 0.0,
+        'taskCount': 0,
         'image': randomImage,
+        'todos': <TodoModel>[],
       };
 
       // Add the new task
@@ -179,6 +202,7 @@ class TaskCard extends StatelessWidget {
   final int taskCount;
   final String image;
   final VoidCallback? onTap;
+  final List<TodoModel>? todos;
 
   const TaskCard(
       {Key? key,
@@ -186,6 +210,7 @@ class TaskCard extends StatelessWidget {
       required this.progress,
       required this.taskCount,
       required this.image,
+      required this.todos,
       this.onTap})
       : super(key: key);
 
@@ -207,37 +232,57 @@ class TaskCard extends StatelessWidget {
         elevation: 4,
         child: Padding(
           padding: const EdgeInsets.only(left: 5, right: 8, top: 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CircleAvatar(
-                // First member of the team
-                backgroundImage: NetworkImage(image),
-                radius: 18,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '$taskCount Tasks',
-                style: const TextStyle(
-                  color: Colors.grey,
-                ),
-              ),
-              const Spacer(),
-              LinearProgressIndicator(
-                value: progress,
-                backgroundColor: Colors.grey[200],
-                valueColor: const AlwaysStoppedAnimation<Color>(
-                    Color.fromARGB(255, 136, 51, 151)),
-              ),
-            ],
+          child: BlocBuilder<TodoBloc, TodoState>(
+            builder: (context, state) {
+              var completedTodos = [];
+              var uncompletedTodos = [];
+              if (state is TodosLoadSuccess) {
+                completedTodos = state.todos
+                    .where((todo) => todo.completed == true)
+                    .toList();
+                uncompletedTodos = state.todos
+                    .where((todo) => todo.completed == false)
+                    .toList();
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CircleAvatar(
+                    // First member of the team
+                    backgroundImage: NetworkImage(image),
+                    radius: 18,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    // '$taskCount Tasks',
+                    '${uncompletedTodos.length} Tasks',
+                    style: const TextStyle(
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const Spacer(),
+                  LinearProgressIndicator(
+                    //  value: progress,
+                    value: uncompletedTodos.isNotEmpty ||
+                            completedTodos.isNotEmpty
+                        ? completedTodos.length /
+                            (completedTodos.length + uncompletedTodos.length)
+                        : 0.0,
+                    backgroundColor: Colors.grey[200],
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                        Color.fromARGB(255, 136, 51, 151)),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),

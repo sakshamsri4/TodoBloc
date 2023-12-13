@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:bloc_api_integration/models/todo_model.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'todo_event.dart';
 import 'todo_state.dart';
@@ -18,7 +19,9 @@ class TodoBloc extends Bloc<TodoEvent, TodoState> {
     try {
       emit(TodosLoadInProgress());
       final todos = await RestService().fetchTodo();
-      emit(TodosLoadSuccess(todos));
+      final checkedCount = todos.where((todo) => todo.completed == true).length;
+      final uncheckedCount = todos.length - checkedCount;
+      emit(TodosLoadSuccess(todos, checkedCount, uncheckedCount));
     } catch (_) {
       emit(TodoOperationFailure("Failed to load Todos"));
     }
@@ -33,8 +36,12 @@ class TodoBloc extends Bloc<TodoEvent, TodoState> {
       // Reorder logic
       final item = updatedTodos.removeAt(event.oldIndex);
       updatedTodos.insert(event.newIndex, item);
+      // Recalculate the counts
+      final checkedCount =
+          updatedTodos.where((todo) => todo.completed == true).length;
+      final uncheckedCount = updatedTodos.length - checkedCount;
 
-      emit(TodosLoadSuccess(updatedTodos));
+      emit(TodosLoadSuccess(updatedTodos, checkedCount, uncheckedCount));
     }
   }
 
@@ -55,7 +62,11 @@ class TodoBloc extends Bloc<TodoEvent, TodoState> {
               updatedTodos[todoIndex].copyWith(completed: event.isChecked);
 
           // Emit the new state with updated todos list
-          emit(TodosLoadSuccess(updatedTodos));
+          final checkedCount =
+              updatedTodos.where((todo) => todo.completed == true).length;
+          final uncheckedCount = updatedTodos.length - checkedCount;
+
+          emit(TodosLoadSuccess(updatedTodos, checkedCount, uncheckedCount));
         }
       } catch (e) {
         emit(TodoOperationFailure("Failed to update Todo status"));
@@ -69,18 +80,21 @@ class TodoBloc extends Bloc<TodoEvent, TodoState> {
     if (state is TodosLoadSuccess) {
       final currentState = state as TodosLoadSuccess;
       final updatedTodos = List<TodoModel>.from(currentState.todos);
-
+      debugPrint("updatedTodos.length: ${updatedTodos.length}");
       // Add the new todo
       // Determine the next ID
       final int nextId =
           updatedTodos.fold<int>(0, (maxId, todo) => max(maxId, todo.id ?? 0)) +
               1;
+      final checkedCount =
+          updatedTodos.where((todo) => todo.completed == true).length;
+      final uncheckedCount = updatedTodos.length - checkedCount;
 
       // Create a new todo with a unique ID
       final newTodo = event.todo.copyWith(id: nextId);
       updatedTodos.insert(0, newTodo);
-
-      emit(TodosLoadSuccess(updatedTodos));
+      debugPrint("updatedTodos.length: ${updatedTodos.length}");
+      emit(TodosLoadSuccess(updatedTodos, checkedCount, uncheckedCount));
     } else {
       // Handle the case where todos are not loaded yet
       emit(TodoOperationFailure("Cannot add Todo at this time"));
@@ -94,8 +108,11 @@ class TodoBloc extends Bloc<TodoEvent, TodoState> {
 
       // Remove the todo with the specified ID
       updatedTodos.removeWhere((todo) => todo.id == event.id);
+      final checkedCount =
+          updatedTodos.where((todo) => todo.completed == true).length;
+      final uncheckedCount = updatedTodos.length - checkedCount;
 
-      emit(TodosLoadSuccess(updatedTodos));
+      emit(TodosLoadSuccess(updatedTodos, checkedCount, uncheckedCount));
     } else {
       // Handle the case where todos are not loaded yet
       emit(TodoOperationFailure("Cannot delete Todo at this time"));

@@ -4,9 +4,15 @@ class TodoModel {
   final String? title;
   final String? description;
   final bool? completed;
+  List<TodoModel> todos;
 
   TodoModel(
-      {this.userId, this.id, this.title, this.completed, this.description});
+      {this.userId,
+      this.id,
+      this.title,
+      this.completed,
+      this.description,
+      this.todos = const []});
 
   // Factory constructor for creating a new TodoModel instance from a map.
   factory TodoModel.fromJson(Map<String, dynamic> json) {

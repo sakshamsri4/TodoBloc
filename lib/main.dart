@@ -1,5 +1,5 @@
-import 'package:bloc_api_integration/bloc/home_bloc.dart';
-import 'package:bloc_api_integration/bloc/home_event.dart';
+import 'package:bloc_api_integration/bloc/task_bloc.dart';
+import 'package:bloc_api_integration/bloc/task_event.dart';
 import 'package:bloc_api_integration/bloc/todo_bloc.dart';
 import 'package:bloc_api_integration/screens/home_screen.dart';
 import 'package:flutter/material.dart';
@@ -31,7 +31,7 @@ class MyApp extends StatelessWidget {
             colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
             useMaterial3: true,
           ),
-          home: const HomeScreen(),
+          home: const TaskScreen(),
         ));
   }
 }

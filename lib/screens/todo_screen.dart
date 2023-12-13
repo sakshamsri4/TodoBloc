@@ -18,19 +18,11 @@ class _TodoScreenState extends State<TodoScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<TodoBloc>().add(LoadTodos());
-    });
+    context.read<TodoBloc>().add(LoadTodos());
   }
 
   void handleCheckboxChange(bool isChecked, TodoModel item) {
     context.read<TodoBloc>().add(TodoStatusChanged(item, isChecked));
-  }
-
-  void reorderData(int oldIndex, int newIndex, bool isCheckedList) {
-    context
-        .read<TodoBloc>()
-        .add(ReorderTodo(oldIndex, newIndex, isCheckedList));
   }
 
   Widget buildReorderableList(BuildContext context, bool isCheckedList) {
@@ -40,7 +32,6 @@ class _TodoScreenState extends State<TodoScreen> {
           List<TodoModel> items = state.todos
               .where((todo) => todo.completed == isCheckedList)
               .toList();
-
           return SizedBox(
             height: 500,
             child: ReorderableListView(
@@ -131,15 +122,6 @@ class _TodoScreenState extends State<TodoScreen> {
         automaticallyImplyLeading: true,
         title: const Text('To-Dos',
             style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 10.0),
-            child: Icon(
-              Icons.delete_outline_outlined,
-              color: Colors.redAccent,
-            ),
-          ),
-        ],
       ),
       body: buildBody(),
     );
@@ -208,7 +190,12 @@ class _TodoScreenState extends State<TodoScreen> {
         } else if (state is TodosLoadSuccess) {
           // Show the task list
           return buildTaskList(context, state.todos);
-        } else if (state is TodosLoadFailure) {
+        }
+        //  else if (state is TodosCountUpdated) {
+        //   // Show the task list
+        //   return buildTaskList(context, state.todos);
+        // }
+        else if (state is TodosLoadFailure) {
           // Show error message
           return Center(child: Text(state.message));
         } else {
@@ -223,7 +210,6 @@ class _TodoScreenState extends State<TodoScreen> {
     var completedTodos = todos.where((todo) => todo.completed == true).toList();
     var uncompletedTodos =
         todos.where((todo) => todo.completed == false).toList();
-
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       child: Container(
@@ -249,7 +235,9 @@ class _TodoScreenState extends State<TodoScreen> {
                     children: [
                       Flexible(
                         child: LinearProgressIndicator(
-                          value: completedTodos.length / todos.length,
+                          value: todos.isNotEmpty
+                              ? completedTodos.length / todos.length
+                              : 0.0,
                           color: Colors.purple,
                           backgroundColor: Colors.grey.shade300,
                         ),
