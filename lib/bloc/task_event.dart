@@ -8,4 +8,12 @@ class AddTask extends TaskEvent {
   AddTask(this.newTask);
 }
 
-// More events can be added as needed
+// Add to your TaskEvent
+class SearchTasks extends TaskEvent {
+  final String query;
+  SearchTasks(this.query);
+}
+
+class ClearSearch extends TaskEvent {}
+
+class InitiateSearch extends TaskEvent {}

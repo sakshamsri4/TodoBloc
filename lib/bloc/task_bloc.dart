@@ -35,24 +35,64 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         emit(TaskAdditionSuccess(updatedTasks));
       }
     });
+
+    on<InitiateSearch>((event, emit) {
+      // Transition to a state that indicates the search mode is active
+      emit(TasksLoadSuccess((state as TasksLoadSuccess).tasks));
+    });
+
+    on<ClearSearch>((event, emit) {
+      debugPrint(state.toString());
+      if (state is TasksLoadSuccess) {
+        // Re-emit TasksLoadSuccess with the original tasks list
+        emit(TasksLoadSuccess((state as TasksLoadSuccess).tasks));
+      }
+    });
+    on<SearchTasks>((event, emit) async {
+      List<Map<String, dynamic>> tasks;
+      final query = event.query.toLowerCase().trim();
+      if (state is TasksLoadSuccess) {
+        tasks = (state as TasksLoadSuccess).tasks;
+      } else if (state is TasksSearchSuccess) {
+        tasks = (state as TasksSearchSuccess).tasks;
+      } else {
+        // Handle other state types if needed or return
+        return;
+      }
+      final searchResults = tasks.where((task) {
+        // Convert the entire task title to lowercase for comparison
+        String titleLower = task['title'].toString().toLowerCase();
+        // Check if the entire query string is a substring of the title
+        return titleLower.contains(query);
+      }).toList();
+
+      debugPrint('query: $query');
+
+      debugPrint("searchResults ${searchResults.toString()}");
+      if (searchResults.isNotEmpty) {
+        emit(TasksSearchSuccess(searchResults));
+      } else {
+        emit(TasksSearchEmpty());
+      }
+    });
   }
 
   Future<List<Map<String, dynamic>>> fetchTasksWithTodos() async {
     try {
       List<Map<String, dynamic>> tasks = [
         {
-          'title': 'Shape Website',
+          'title': 'Design',
           'progress': 0.75,
           'taskCount': 46,
           'image':
               "https://media.istockphoto.com/id/1290658063/photo/portrait-of-a-beautiful-woman-with-natural-make-up.jpg?s=2048x2048&w=is&k=20&c=dZsBcuhog3SZnTj6bq5Is_isO2TpBNWunUwlKkln_dw=",
           'todos': [
-            TodoModel(title: 'Design Home Page', completed: false),
+            TodoModel(title: 'Design  ', completed: false),
             // Add more todos...
           ],
         },
         {
-          'title': 'Shape Website',
+          'title': 'Design  Page',
           'progress': 0.75,
           'taskCount': 46,
           'image':
@@ -69,34 +109,34 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
           'image':
               "https://media.istockphoto.com/id/1290658063/photo/portrait-of-a-beautiful-woman-with-natural-make-up.jpg?s=2048x2048&w=is&k=20&c=dZsBcuhog3SZnTj6bq5Is_isO2TpBNWunUwlKkln_dw=",
           'todos': [
-            TodoModel(title: 'Design Home Page', completed: false),
+            TodoModel(title: ' Home Page', completed: false),
             // Add more todos...
           ],
         },
         {
-          'title': 'Shape Website',
+          'title': 'Task Page',
           'progress': 0.75,
           'taskCount': 46,
           'image':
               "https://media.istockphoto.com/id/1174452879/photo/i-do-all-my-work-on-this-device.jpg?s=612x612&w=0&k=20&c=ukqiZAIztp7olWY2h4kbcvdZJQ4e0G6zqwNPRlF5Q9Y=",
           'todos': [
-            TodoModel(title: 'Design Home Page', completed: false),
+            TodoModel(title: 'Task Page', completed: false),
             // Add more todos...
           ],
         },
         {
-          'title': 'Shape Website',
+          'title': 'Todo Page',
           'progress': 0.75,
           'taskCount': 46,
           'image':
               "https://media.istockphoto.com/id/1040964880/photo/stay-hungry-for-success.jpg?s=612x612&w=0&k=20&c=rA1HTQ_BS1bv1POYCRthD179B3yENJhJITVeJTt_vJg=",
           'todos': [
-            TodoModel(title: 'Design Home Page', completed: false),
+            TodoModel(title: 'Todo Page', completed: false),
             // Add more todos...
           ],
         },
         {
-          'title': 'Shape Website',
+          'title': 'Design Home Page',
           'progress': 0.75,
           'taskCount': 46,
           'image':

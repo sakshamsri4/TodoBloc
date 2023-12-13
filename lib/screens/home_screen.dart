@@ -19,6 +19,7 @@ class TaskScreen extends StatefulWidget {
 }
 
 class _TaskScreenState extends State<TaskScreen> {
+  final TextEditingController _searchController = TextEditingController();
   // List of tasks and their progress. This could come from your backend or state management logic.
   @override
   void initState() {
@@ -41,7 +42,7 @@ class _TaskScreenState extends State<TaskScreen> {
         onPressed: () {
           _showAddTaskDialog(context);
         },
-        backgroundColor: Colors.purpleAccent,
+        backgroundColor: Colors.amberAccent,
         child: const Icon(Icons.add),
       ),
     );
@@ -50,13 +51,20 @@ class _TaskScreenState extends State<TaskScreen> {
   Widget _buildTaskGrid(List<Map<String, dynamic>> tasks) {
     return BlocBuilder<TodoBloc, TodoState>(
       builder: (context, state) {
+        debugPrint('_buildTaskGrid ${state.toString()}}');
         // Extract the counts from the state
+        if (state is TasksSearchEmpty) {
+          context.read<TaskBloc>().add(LoadTasks());
+        }
         int checkedCount = 0;
         int uncheckedCount = 0;
         debugPrint('state is $state');
         if (state is TodosCountUpdated) {
           checkedCount = state.checkedCount;
           uncheckedCount = state.uncheckedCount;
+        }
+        if (tasks.isEmpty) {
+          context.read<TaskBloc>().add(LoadTasks());
         }
         return GridView.builder(
           padding: const EdgeInsets.all(16),
@@ -85,9 +93,12 @@ class _TaskScreenState extends State<TaskScreen> {
   Widget buildBody() {
     return BlocBuilder<TaskBloc, TaskState>(
       builder: (context, state) {
+        debugPrint('buildBody ${state.toString()}');
         if (state is TasksLoadSuccess) {
           return _buildTaskGrid(state.tasks);
         } else if (state is TaskAdditionSuccess) {
+          return _buildTaskGrid(state.tasks);
+        } else if (state is TasksSearchSuccess) {
           return _buildTaskGrid(state.tasks);
         } else {
           return const Center(child: CircularProgressIndicator());
@@ -98,31 +109,41 @@ class _TaskScreenState extends State<TaskScreen> {
 
   AppBar buildAppBar() {
     return AppBar(
-      title: const Text('Goals'),
-      elevation: 0,
-      leading: BlocBuilder<TaskBloc, TaskState>(
+      title: BlocBuilder<TaskBloc, TaskState>(
         builder: (context, state) {
-          if (state is TasksLoadSuccess && state.tasks.isNotEmpty) {
-            String imageUrl =
-                state.tasks[1]['image']; // Access the first task's image URL
-            return Container(
-              margin: const EdgeInsets.all(8),
-              width: 20,
-              height: 20,
-              child: CircleAvatar(
-                backgroundImage: NetworkImage(imageUrl),
-              ),
-            );
-          } else {
-            return const SizedBox.shrink();
-          }
+          return TextField(
+            onChanged: (value) {
+              debugPrint("Search query: $value");
+              context.read<TaskBloc>().add(SearchTasks(value));
+            },
+            decoration: const InputDecoration(
+              hintText: 'Search tasks...',
+              border: InputBorder.none,
+            ),
+            //controller: _searchController,
+          );
         },
       ),
       actions: [
-        IconButton(
-          icon: const Icon(Icons.search),
-          onPressed: () {
-            // Implement search functionality
+        BlocBuilder<TaskBloc, TaskState>(
+          builder: (context, state) {
+            debugPrint('buildAppBar actions ${state.toString()}');
+            if (state is TasksSearchEmpty) {
+              context.read<TaskBloc>().add(LoadTasks());
+            }
+            if (state is TasksSearchSuccess || state is TasksLoadSuccess) {
+              return IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () {
+                    _searchController.clear();
+                    context.read<TaskBloc>().add(LoadTasks());
+                  });
+            } else {
+              return IconButton(
+                icon: const Icon(Icons.search),
+                onPressed: () => context.read<TaskBloc>().add(LoadTasks()),
+              );
+            }
           },
         ),
       ],

@@ -14,4 +14,9 @@ class TaskAdditionSuccess extends TaskState {
   TaskAdditionSuccess(this.tasks);
 }
 
-// More states can be added as needed
+class TasksSearchSuccess extends TaskState {
+  final List<Map<String, dynamic>> tasks;
+  TasksSearchSuccess(this.tasks);
+}
+
+class TasksSearchEmpty extends TaskState {}
