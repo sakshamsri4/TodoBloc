@@ -210,77 +210,82 @@ class _TodoScreenState extends State<TodoScreen> {
     var completedTodos = todos.where((todo) => todo.completed == true).toList();
     var uncompletedTodos =
         todos.where((todo) => todo.completed == false).toList();
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(vertical: 8.0, horizontal: 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("${uncompletedTodos.length} Tasks",
+    return RefreshIndicator(
+      onRefresh: () async {
+        context.read<TodoBloc>().add(LoadTodos());
+      },
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 8.0, horizontal: 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("${uncompletedTodos.length} Tasks",
+                        style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                            color: Colors.grey)),
+                    Text(widget.title ?? "",
+                        style: const TextStyle(
+                            fontSize: 24, fontWeight: FontWeight.bold)),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: LinearProgressIndicator(
+                            value: todos.isNotEmpty
+                                ? completedTodos.length / todos.length
+                                : 0.0,
+                            color: Colors.purple,
+                            backgroundColor: Colors.grey.shade300,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text("${completedTodos.length} / ${todos.length}")
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              uncompletedTodos.isNotEmpty
+                  ? buildReorderableList(
+                      context,
+                      false,
+                    )
+                  : const SizedBox(
+                      height: 200,
+                      child: Center(
+                        child: Text("No Tasks Added Yet",
+                            style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey)),
+                      ),
+                    ),
+              Visibility(
+                visible: completedTodos.isNotEmpty,
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 8.0, horizontal: 10),
+                  child: Text("+ ${completedTodos.length} Completed Tasks",
                       style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w400,
                           color: Colors.grey)),
-                  Text(widget.title ?? "",
-                      style: const TextStyle(
-                          fontSize: 24, fontWeight: FontWeight.bold)),
-                  Row(
-                    children: [
-                      Flexible(
-                        child: LinearProgressIndicator(
-                          value: todos.isNotEmpty
-                              ? completedTodos.length / todos.length
-                              : 0.0,
-                          color: Colors.purple,
-                          backgroundColor: Colors.grey.shade300,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Text("${completedTodos.length} / ${todos.length}")
-                    ],
-                  ),
-                ],
+                ),
               ),
-            ),
-            uncompletedTodos.isNotEmpty
-                ? buildReorderableList(
-                    context,
-                    false,
-                  )
-                : const SizedBox(
-                    height: 200,
-                    child: Center(
-                      child: Text("No Tasks Added Yet",
-                          style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey)),
-                    ),
-                  ),
-            Visibility(
-              visible: completedTodos.isNotEmpty,
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 8.0, horizontal: 10),
-                child: Text("+ ${completedTodos.length} Completed Tasks",
-                    style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.grey)),
+              buildReorderableList(
+                context,
+                true,
               ),
-            ),
-            buildReorderableList(
-              context,
-              true,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

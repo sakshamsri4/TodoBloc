@@ -66,25 +66,31 @@ class _TaskScreenState extends State<TaskScreen> {
         if (tasks.isEmpty) {
           context.read<TaskBloc>().add(LoadTasks());
         }
-        return GridView.builder(
-          padding: const EdgeInsets.all(16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2, // Number of columns
-            crossAxisSpacing: 16, // Horizontal space between cards
-            mainAxisSpacing: 16, // Vertical space between cards
-          ),
-          itemCount: tasks.length,
-          itemBuilder: (BuildContext context, int index) {
-            final task = tasks[index];
-            return TaskCard(
-                title: task['title'],
-                progress: checkedCount > 0 || uncheckedCount > 0
-                    ? checkedCount / (checkedCount + uncheckedCount)
-                    : 0.0,
-                taskCount: uncheckedCount,
-                image: task['image'],
-                todos: task['todos']);
+        return RefreshIndicator(
+          onRefresh: () async {
+            context.read<TaskBloc>().add(LoadTasks());
+            _searchController.clear();
           },
+          child: GridView.builder(
+            padding: const EdgeInsets.all(16),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2, // Number of columns
+              crossAxisSpacing: 16, // Horizontal space between cards
+              mainAxisSpacing: 16, // Vertical space between cards
+            ),
+            itemCount: tasks.length,
+            itemBuilder: (BuildContext context, int index) {
+              final task = tasks[index];
+              return TaskCard(
+                  title: task['title'],
+                  progress: checkedCount > 0 || uncheckedCount > 0
+                      ? checkedCount / (checkedCount + uncheckedCount)
+                      : 0.0,
+                  taskCount: uncheckedCount,
+                  image: task['image'],
+                  todos: task['todos']);
+            },
+          ),
         );
       },
     );
@@ -120,7 +126,7 @@ class _TaskScreenState extends State<TaskScreen> {
               hintText: 'Search tasks...',
               border: InputBorder.none,
             ),
-            //controller: _searchController,
+            controller: _searchController,
           );
         },
       ),
