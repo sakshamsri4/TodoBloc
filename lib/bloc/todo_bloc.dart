@@ -7,6 +7,7 @@ import 'todo_event.dart';
 import 'todo_state.dart';
 import 'package:bloc_api_integration/services/rest_service.dart';
 
+/// The BLoC class responsible for managing the state and business logic of the Todo feature.
 class TodoBloc extends Bloc<TodoEvent, TodoState> {
   TodoBloc() : super(TodosInitial()) {
     on<LoadTodos>(_onLoadTodos);
@@ -15,6 +16,8 @@ class TodoBloc extends Bloc<TodoEvent, TodoState> {
     on<AddTodo>(_onAddTodo);
     on<DeleteTodo>(_onDeleteTodo);
   }
+
+  /// Handles the [LoadTodos] event by fetching the todos from the REST service.
   Future<void> _onLoadTodos(LoadTodos event, Emitter<TodoState> emit) async {
     try {
       emit(TodosLoadInProgress());
@@ -27,6 +30,7 @@ class TodoBloc extends Bloc<TodoEvent, TodoState> {
     }
   }
 
+  /// Handles the [ReorderTodo] event by reordering the todos.
   Future<void> _onReorderTodo(
       ReorderTodo event, Emitter<TodoState> emit) async {
     if (state is TodosLoadSuccess) {
@@ -45,6 +49,7 @@ class TodoBloc extends Bloc<TodoEvent, TodoState> {
     }
   }
 
+  /// Handles the [TodoStatusChanged] event by updating the status of a todo.
   Future<void> _onTodoStatusChanged(
       TodoStatusChanged event, Emitter<TodoState> emit) async {
     if (state is TodosLoadSuccess) {
@@ -76,11 +81,12 @@ class TodoBloc extends Bloc<TodoEvent, TodoState> {
     // Implement other event handlers
   }
 
+  /// Handles the [AddTodo] event by adding a new todo.
   Future<void> _onAddTodo(AddTodo event, Emitter<TodoState> emit) async {
     if (state is TodosLoadSuccess) {
       final currentState = state as TodosLoadSuccess;
       final updatedTodos = List<TodoModel>.from(currentState.todos);
-      debugPrint("updatedTodos.length: ${updatedTodos.length}");
+
       // Add the new todo
       // Determine the next ID
       final int nextId =
@@ -93,7 +99,7 @@ class TodoBloc extends Bloc<TodoEvent, TodoState> {
       // Create a new todo with a unique ID
       final newTodo = event.todo.copyWith(id: nextId);
       updatedTodos.insert(0, newTodo);
-      debugPrint("updatedTodos.length: ${updatedTodos.length}");
+
       emit(TodosLoadSuccess(updatedTodos, checkedCount, uncheckedCount));
     } else {
       // Handle the case where todos are not loaded yet
@@ -101,6 +107,7 @@ class TodoBloc extends Bloc<TodoEvent, TodoState> {
     }
   }
 
+  /// Handles the [DeleteTodo] event by deleting a todo.
   Future<void> _onDeleteTodo(DeleteTodo event, Emitter<TodoState> emit) async {
     if (state is TodosLoadSuccess) {
       final currentState = state as TodosLoadSuccess;

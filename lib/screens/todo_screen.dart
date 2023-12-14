@@ -16,15 +16,37 @@ class TodoScreen extends StatefulWidget {
 
 class _TodoScreenState extends State<TodoScreen> {
   @override
+
+  /// Initializes the state of the [TodoScreen] widget.
+  /// It calls the [LoadTodos] event to load the todos using the [TodoBloc].
   void initState() {
     super.initState();
     context.read<TodoBloc>().add(LoadTodos());
   }
 
+  /// Handles the change in checkbox state for a todo item.
+  /// It calls the [TodoStatusChanged] event to update the status of the todo item
+  /// using the [TodoBloc].
+  ///
+  /// Parameters:
+  /// - [isChecked]: The new state of the checkbox.
+  /// - [item]: The todo item for which the checkbox state is changed.
   void handleCheckboxChange(bool isChecked, TodoModel item) {
     context.read<TodoBloc>().add(TodoStatusChanged(item, isChecked));
   }
 
+  /// Builds a [ReorderableListView] widget based on the state of the [TodoBloc].
+  /// It filters the todos based on the [isCheckedList] parameter and generates
+  /// a list of [TodoModel] items.
+  ///
+  /// Parameters:
+  /// - [context]: The build context.
+  /// - [isCheckedList]: A boolean value indicating whether to filter completed
+  ///   or incomplete todos.
+  ///
+  /// Returns:
+  /// A [SizedBox] widget containing the [ReorderableListView] with the filtered
+  /// todo items.
   Widget buildReorderableList(BuildContext context, bool isCheckedList) {
     return BlocBuilder<TodoBloc, TodoState>(
       builder: (context, state) {
@@ -49,6 +71,17 @@ class _TodoScreenState extends State<TodoScreen> {
     );
   }
 
+  /// Handles the reorder of todo items in the [ReorderableListView].
+  /// It updates the order of the items in the [items] list and calls the
+  /// [ReorderTodo] event to update the order in the [TodoBloc].
+  ///
+  /// Parameters:
+  /// - [context]: The build context.
+  /// - [items]: The list of [TodoModel] items.
+  /// - [oldIndex]: The index of the item before the reorder.
+  /// - [newIndex]: The index of the item after the reorder.
+  /// - [isCheckedList]: A boolean value indicating whether the items are
+  ///   completed or incomplete.
   void _onReorder(BuildContext context, List<TodoModel> items, int oldIndex,
       int newIndex, bool isCheckedList) {
     if (newIndex > oldIndex) {
@@ -62,6 +95,16 @@ class _TodoScreenState extends State<TodoScreen> {
         .add(ReorderTodo(oldIndex, newIndex, isCheckedList));
   }
 
+  /// Builds a single todo item widget.
+  ///
+  /// This widget represents a single todo item in the todo list.
+  /// It is used in the [TodoScreen] to display each todo item.
+  ///
+  /// The [context] parameter is the build context.
+  /// The [todo] parameter is the todo model representing the item.
+  /// The [index] parameter is the index of the todo item in the list.
+  ///
+  /// Returns a [Dismissible] widget that allows the todo item to be swiped and deleted.
   Widget buildTodoItem(BuildContext context, TodoModel todo, int index) {
     return Dismissible(
       background: Container(
@@ -78,7 +121,6 @@ class _TodoScreenState extends State<TodoScreen> {
       child: Center(
         child: Card(
           child: ListTile(
-            //   tileColor: Colors.grey.shade100,
             title: Text(
               todo.title ?? "",
               style: TextStyle(
@@ -206,6 +248,19 @@ class _TodoScreenState extends State<TodoScreen> {
     );
   }
 
+  /// Builds the task list widget.
+  ///
+  /// This method takes in the [BuildContext] and a list of [TodoModel] objects as parameters.
+  /// It returns a [RefreshIndicator] widget wrapped in a [SingleChildScrollView] and a [Container].
+  /// The task list is divided into completed and uncompleted tasks.
+  /// The completed tasks are displayed with a progress indicator and the number of completed tasks out of the total tasks.
+  /// The uncompleted tasks are displayed in a [ReorderableListView] if there are any, otherwise a message is displayed indicating that no tasks have been added yet.
+  /// The completed tasks are also displayed with a message indicating the number of completed tasks.
+  ///
+  /// Example usage:
+  /// ```dart
+  /// Widget taskList = buildTaskList(context, todos);
+  /// ```
   Widget buildTaskList(BuildContext context, List<TodoModel> todos) {
     var completedTodos = todos.where((todo) => todo.completed == true).toList();
     var uncompletedTodos =

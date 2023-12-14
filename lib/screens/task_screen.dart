@@ -11,6 +11,7 @@ import 'package:bloc_api_integration/screens/todo_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+/// The screen that displays the tasks and their progress.
 class TaskScreen extends StatefulWidget {
   const TaskScreen({super.key});
 
@@ -20,16 +21,13 @@ class TaskScreen extends StatefulWidget {
 
 class _TaskScreenState extends State<TaskScreen> {
   final TextEditingController _searchController = TextEditingController();
-  // List of tasks and their progress. This could come from your backend or state management logic.
+
   @override
   void initState() {
     super.initState();
     // Trigger loading tasks when the widget is initialized
     context.read<TaskBloc>().add(LoadTasks());
     context.read<TodoBloc>().add(LoadTodos());
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   context.read<TodoBloc>().add(LoadTodos());
-    // });
   }
 
   @override
@@ -48,21 +46,24 @@ class _TaskScreenState extends State<TaskScreen> {
     );
   }
 
+  /// Builds the grid of tasks.
+  ///
+  /// This method takes a list of tasks as input and builds a grid of tasks using the `GridView.builder` widget.
+  /// It uses the `BlocBuilder` widget to listen to changes in the `TodoBloc` state and rebuilds the grid accordingly.
+  /// The grid is refreshed when the user performs a pull-to-refresh action.
+  /// Each task is displayed as a `TaskCard` widget, which shows the task title, progress, task count, image, and todos.
+  ///
+  /// Parameters:
+  /// - `tasks`: A list of maps representing the tasks.
+  ///
+  /// Returns:
+  /// A `Widget` representing the grid of tasks.
   Widget _buildTaskGrid(List<Map<String, dynamic>> tasks) {
     return BlocBuilder<TodoBloc, TodoState>(
       builder: (context, state) {
-        debugPrint('_buildTaskGrid ${state.toString()}}');
         // Extract the counts from the state
-        if (state is TasksSearchEmpty) {
-          context.read<TaskBloc>().add(LoadTasks());
-        }
-        int checkedCount = 0;
-        int uncheckedCount = 0;
-        debugPrint('state is $state');
-        if (state is TodosCountUpdated) {
-          checkedCount = state.checkedCount;
-          uncheckedCount = state.uncheckedCount;
-        }
+        final checkedCount = _extractCheckedCount(state);
+        final uncheckedCount = _extractUncheckedCount(state);
         if (tasks.isEmpty) {
           context.read<TaskBloc>().add(LoadTasks());
         }
@@ -96,10 +97,26 @@ class _TaskScreenState extends State<TaskScreen> {
     );
   }
 
+  /// Extracts the count of checked tasks from the [TodoState].
+  int _extractCheckedCount(TodoState state) {
+    if (state is TodosCountUpdated) {
+      return state.checkedCount;
+    }
+    return 0;
+  }
+
+  /// Extracts the count of unchecked tasks from the [TodoState].
+  int _extractUncheckedCount(TodoState state) {
+    if (state is TodosCountUpdated) {
+      return state.uncheckedCount;
+    }
+    return 0;
+  }
+
+  /// Builds the body of the screen.
   Widget buildBody() {
     return BlocBuilder<TaskBloc, TaskState>(
       builder: (context, state) {
-        debugPrint('buildBody ${state.toString()}');
         if (state is TasksLoadSuccess) {
           return _buildTaskGrid(state.tasks);
         } else if (state is TaskAdditionSuccess) {
@@ -113,13 +130,26 @@ class _TaskScreenState extends State<TaskScreen> {
     );
   }
 
+  /// Builds the app bar of the screen.
+  ///
+  /// This method returns an [AppBar] widget that contains a [TextField] for searching tasks.
+  /// The [TextField] is connected to a [TaskBloc] using [BlocBuilder] to handle state changes.
+  /// When the user types in the search field, it triggers the [SearchTasks] event in the [TaskBloc].
+  /// The [AppBar] also contains action buttons based on the state of the [TaskBloc].
+  /// If the state is [TasksSearchEmpty], it automatically triggers the [LoadTasks] event.
+  /// If the state is [TasksSearchSuccess] or [TasksLoadSuccess], it shows a close button to clear the search field and trigger the [LoadTasks] event.
+  /// Otherwise, it shows a search button to trigger the [LoadTasks] event.
+  ///
+  /// Example usage:
+  /// ```dart
+  /// AppBar appBar = buildAppBar();
+  /// ```
   AppBar buildAppBar() {
     return AppBar(
       title: BlocBuilder<TaskBloc, TaskState>(
         builder: (context, state) {
           return TextField(
             onChanged: (value) {
-              debugPrint("Search query: $value");
               context.read<TaskBloc>().add(SearchTasks(value));
             },
             decoration: const InputDecoration(
@@ -133,7 +163,6 @@ class _TaskScreenState extends State<TaskScreen> {
       actions: [
         BlocBuilder<TaskBloc, TaskState>(
           builder: (context, state) {
-            debugPrint('buildAppBar actions ${state.toString()}');
             if (state is TasksSearchEmpty) {
               context.read<TaskBloc>().add(LoadTasks());
             }
@@ -156,6 +185,19 @@ class _TaskScreenState extends State<TaskScreen> {
     );
   }
 
+  /// Shows the dialog to add a new task.
+  ///
+  /// This method displays an AlertDialog with a text field where the user can enter a task title.
+  /// The dialog has two buttons: "Cancel" and "Add". If the user taps "Cancel", the dialog is dismissed.
+  /// If the user taps "Add" and the task title is not empty, the [_addNewTask] method is called to add the task.
+  /// After adding the task, the dialog is dismissed. If the task title is empty, a SnackBar is displayed
+  /// with a message indicating that the title cannot be empty.
+  ///
+  /// Parameters:
+  ///   - [context]: The BuildContext of the current widget.
+  ///
+  /// Returns:
+  ///   - [Future<void>]: A Future that resolves to void.
   Future<void> _showAddTaskDialog(BuildContext context) async {
     TextEditingController titleController = TextEditingController();
 
@@ -223,6 +265,10 @@ class _TaskScreenState extends State<TaskScreen> {
   }
 }
 
+/// A card widget that represents a task.
+///
+/// This widget displays the title, progress, task count, and an image associated with the task.
+/// It also allows the user to tap on the card to navigate to the [TodoScreen].
 class TaskCard extends StatelessWidget {
   final String title;
   final double progress;
@@ -231,15 +277,19 @@ class TaskCard extends StatelessWidget {
   final VoidCallback? onTap;
   final List<TodoModel>? todos;
 
-  const TaskCard(
-      {Key? key,
-      required this.title,
-      required this.progress,
-      required this.taskCount,
-      required this.image,
-      required this.todos,
-      this.onTap})
-      : super(key: key);
+  /// Creates a [TaskCard] widget.
+  ///
+  /// The [title], [progress], [taskCount], [image], and [todos] parameters are required.
+  /// The [onTap] parameter is optional.
+  const TaskCard({
+    Key? key,
+    required this.title,
+    required this.progress,
+    required this.taskCount,
+    required this.image,
+    required this.todos,
+    this.onTap,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -255,64 +305,68 @@ class TaskCard extends StatelessWidget {
           ),
         );
       },
-      child: Card(
-        elevation: 4,
-        child: Padding(
-          padding: const EdgeInsets.only(left: 5, right: 8, top: 8),
-          child: BlocBuilder<TodoBloc, TodoState>(
-            builder: (context, state) {
-              var completedTodos = [];
-              var uncompletedTodos = [];
-              if (state is TodosLoadSuccess) {
-                completedTodos = state.todos
-                    .where((todo) => todo.completed == true)
-                    .toList();
-                uncompletedTodos = state.todos
-                    .where((todo) => todo.completed == false)
-                    .toList();
-              }
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CircleAvatar(
-                    // First member of the team
-                    backgroundImage: NetworkImage(image),
-                    radius: 18,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    // '$taskCount Tasks',
-                    '${uncompletedTodos.length} Tasks',
-                    style: const TextStyle(
-                      color: Colors.grey,
-                    ),
-                  ),
-                  const Spacer(),
-                  LinearProgressIndicator(
-                    //  value: progress,
-                    value: uncompletedTodos.isNotEmpty ||
-                            completedTodos.isNotEmpty
-                        ? completedTodos.length /
-                            (completedTodos.length + uncompletedTodos.length)
-                        : 0.0,
-                    backgroundColor: Colors.grey[200],
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                        Color.fromARGB(255, 136, 51, 151)),
-                  ),
-                ],
-              );
-            },
-          ),
+      child: buildCard(),
+    );
+  }
+
+  Widget buildCard() {
+    return Card(
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.only(left: 5, right: 8, top: 8),
+        child: BlocBuilder<TodoBloc, TodoState>(
+          builder: (context, state) {
+            var completedTodos = [];
+            var uncompletedTodos = [];
+            if (state is TodosLoadSuccess) {
+              completedTodos =
+                  state.todos.where((todo) => todo.completed == true).toList();
+              uncompletedTodos =
+                  state.todos.where((todo) => todo.completed == false).toList();
+            }
+            return buildTile(uncompletedTodos, completedTodos);
+          },
         ),
       ),
+    );
+  }
+
+  Widget buildTile(
+      List<dynamic> uncompletedTodos, List<dynamic> completedTodos) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CircleAvatar(
+          backgroundImage: NetworkImage(image),
+          radius: 18,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '${uncompletedTodos.length} Tasks',
+          style: const TextStyle(
+            color: Colors.grey,
+          ),
+        ),
+        const Spacer(),
+        LinearProgressIndicator(
+          value: uncompletedTodos.isNotEmpty || completedTodos.isNotEmpty
+              ? completedTodos.length /
+                  (completedTodos.length + uncompletedTodos.length)
+              : 0.0,
+          backgroundColor: Colors.grey[200],
+          valueColor: const AlwaysStoppedAnimation<Color>(
+            Color.fromARGB(255, 136, 51, 151),
+          ),
+        ),
+      ],
     );
   }
 }
