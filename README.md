@@ -48,10 +48,11 @@ Conclusion
 This README provides a high-level overview of the BLoC components used for managing tasks and todos in a Flutter application. The BLoC pattern helps in efficiently managing state and organizing business logic, making the codebase more maintainable and scalable.
 
 ## Screenshots
+<img src="./assets/s1.png" widt="500" height="400">
+<img src="./assets/s2.png" widt="500" height="400">
+<img src="./assets/s3.png" widt="500" height="400">
+<img src="./assets/s4.png" widt="500" height="400">
+<img src="./assets/s5.png" widt="500" height="400">
+<img src="./assets/s6.png" widt="500" height="400">
 
-![Screenshot 1](/assets/s1.png)
-![Screenshot 2](/assets/s2.png)
-![Screenshot 3](/assets/s3.png)
-![Screenshot 4](/assets/s4.png)
-![Screenshot 5](/assets/s5.png)
-![Screenshot 6](/assets/s6.png)
+
